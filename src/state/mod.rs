@@ -1,10 +1,15 @@
-use bracket_lib::terminal::{BTerm, NAVY, VirtualKeyCode, GameState};
+use bracket_lib::terminal::{BTerm, GameState, VirtualKeyCode, NAVY};
 
-use crate::{player::Player, obstacle::Obstacle, gamemode::GameMode, config::{SCREEN_WIDTH, SCREEN_HEIGHT, FRAME_DURATION}};
-
+use crate::{
+    config::{FRAME_DURATION, SCREEN_HEIGHT, SCREEN_WIDTH},
+    gamemode::GameMode,
+    obstacle::Obstacle,
+    player::Player,
+};
 
 pub struct State {
     player: Player,
+    progress: i32,
     frame_time: f32,
     obstacle: Obstacle,
     mode: GameMode,
@@ -20,7 +25,8 @@ impl Default for State {
 impl State {
     pub fn new() -> Self {
         State {
-            player: Player::new(5, 25),
+            player: Player::new(25),
+            progress: 0,
             frame_time: 0.0,
             obstacle: Obstacle::new(SCREEN_WIDTH, 0),
             mode: GameMode::Menu,
@@ -33,7 +39,8 @@ impl State {
         self.frame_time += ctx.frame_time_ms;
         if self.frame_time > FRAME_DURATION {
             self.frame_time = 0.0;
-            self.player.gravity_and_move();
+            self.player.apply_gravity();
+            self.progress += 1;
         }
         if let Some(VirtualKeyCode::Space) = ctx.key {
             self.player.flap();
@@ -42,14 +49,14 @@ impl State {
         ctx.print(0, 0, "Press SPACE to flap!");
         ctx.print(0, 1, &format!("Score: {}", self.score));
 
-        self.obstacle.render(ctx, self.player.x);
+        self.obstacle.render(ctx, self.progress);
 
-        if self.player.x > self.obstacle.x {
+        if self.progress > self.obstacle.x {
             self.score += 1;
-            self.obstacle = Obstacle::new(self.player.x + SCREEN_WIDTH, self.score);
+            self.obstacle = Obstacle::new(self.progress + SCREEN_WIDTH, self.score);
         }
 
-        if self.player.y > SCREEN_HEIGHT || self.obstacle.hit_obstacle(&self.player) {
+        if self.player.y > SCREEN_HEIGHT || self.obstacle.hit_obstacle(&self.player, self) {
             self.mode = GameMode::End;
         }
     }
@@ -85,11 +92,15 @@ impl State {
     }
 
     fn restart(&mut self) {
-        self.player = Player::new(5, 25);
+        self.player = Player::new(25);
         self.frame_time = 0.0;
         self.obstacle = Obstacle::new(SCREEN_WIDTH, 0);
         self.mode = GameMode::Playing;
         self.score = 0;
+    }
+
+    pub fn player_has_reached(&self, x: i32) -> bool {
+        self.progress == x
     }
 }
 

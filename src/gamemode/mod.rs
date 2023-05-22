@@ -3,4 +3,3 @@ pub enum GameMode {
     Playing,
     End,
 }
-

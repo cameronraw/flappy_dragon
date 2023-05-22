@@ -1,6 +1,8 @@
-use bracket_lib::{random::RandomNumberGenerator, terminal::{BTerm, RED, BLACK, to_cp437}};
-
-use crate::{player::Player, config::SCREEN_HEIGHT};
+use crate::{config::SCREEN_HEIGHT, player::Player, state::State};
+use bracket_lib::{
+    random::RandomNumberGenerator,
+    terminal::{to_cp437, BTerm, BLACK, RED},
+};
 
 pub struct Obstacle {
     pub x: i32,
@@ -31,11 +33,10 @@ impl Obstacle {
         }
     }
 
-    pub fn hit_obstacle(&self, player: &Player) -> bool {
+    pub fn hit_obstacle(&self, player: &Player, state: &State) -> bool {
         let half_size = self.size / 2;
-        let does_x_match = player.x == self.x;
-        let player_above_gap = player.y < self.gap_y - half_size;
-        let player_below_gap = player.y > self.gap_y + half_size;
-        does_x_match && (player_above_gap || player_below_gap)
+        let does_x_match = state.player_has_reached(self.x);
+        let meets_gap = player.is_within_y_range(self.gap_y - half_size, self.gap_y + half_size);
+        does_x_match && !meets_gap
     }
 }
